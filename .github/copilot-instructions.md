@@ -183,13 +183,16 @@ Use a **consistent wrapper structure** for all responses:
 }
 ```
 
-### Rules
+### Java DTO Rules
 
-- Use **camelCase** for all JSON keys
-- Use `@JsonInclude(NON_NULL)` to omit null fields from responses
-- **Never** expose sensitive fields (`passwordHash`, `internalId`, etc.)
-- **Never** return stack traces or internal class names in responses
-- Align response body with the HTTP status code
+- **File Pattern**: `src/main/java/**/*DTO.java`, `src/main/java/**/model/*.java`
+- **Naming**: Always use **camelCase** for fields and all JSON keys.
+- **JSON Mapping**: Ensure all JSON keys (e.g., in `@JsonProperty`) use **camelCase**.
+- **Constraint**: Never suggest or use kebab-case (e.g., `desc-test`) or snake_case for Java fields or JSON keys.
+- Use `@JsonInclude(NON_NULL)` to omit null fields from responses.
+- **Never** expose sensitive fields (`passwordHash`, `internalId`, etc.).
+- **Never** return stack traces or internal class names in responses.
+- Align response body with the HTTP status code. For example, a `400 Bad Request` should return a structured error object, not a success wrapper.
 
 ---
 

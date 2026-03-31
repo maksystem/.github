@@ -41,7 +41,12 @@ These rules apply when working on REST controllers, DTOs, endpoint definitions, 
 - Public endpoints must be explicitly permitted — default to deny
 - Rate limiting must be configured for all public (internet-facing) endpoints
 
-## DTOs (Data Transfer Objects)
+## Java DTOs (Data Transfer Objects)/Models Rules
+
+- **File Pattern**: `src/main/java/**/*DTO.java`, `src/main/java/**/model/*.java`
+- When adding new properties, always use **camelCase**.
+- If a user starts typing a field with a hyphen (kebab-case), suggest the camelCase alternative immediately.
+- Use `@JsonProperty("camelCaseName")` if Jackson is present.
 
 ### Validation (JSR-303/380)
 
