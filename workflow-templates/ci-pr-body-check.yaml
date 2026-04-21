@@ -1,4 +1,4 @@
-name: Run PR body check for JIRA ticket
+name: ⚙️ Run PR body check for JIRA ticket
 
 on:
   pull_request:
