@@ -4,12 +4,13 @@ on:
   pull_request:
     types: [opened, edited, reopened, synchronize]
 
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   call-pr-desc-check:
     uses: maksystem/ci-hub/.github/workflows/ci-utils-pr-desc-check.yaml@main
-    permissions:
-      contents: write
-      pull-requests: write
     with:
       pr_number: ${{ github.event.pull_request.number }}
       pr_body: ${{ github.event.pull_request.body }}
