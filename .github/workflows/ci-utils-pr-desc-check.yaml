@@ -27,7 +27,7 @@ permissions:
   contents: read
 
 jobs:
-  validate-pr-body:
+  validate-pr-body1:
     runs-on: ubuntu-latest
     outputs:
       format_valid: ${{ steps.validate.outputs.format_valid }}

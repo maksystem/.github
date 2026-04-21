@@ -9,7 +9,7 @@ permissions:
   pull-requests: write
 
 jobs:
-  call-pr-desc-check:
+  pr-desc-check:
     uses: ./.github/workflows/ci-utils-pr-desc-check.yaml
     with:
       pr_number: ${{ github.event.pull_request.number }}
