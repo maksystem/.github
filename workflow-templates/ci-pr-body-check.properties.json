@@ -1,7 +1,7 @@
 {
   "name": "PR Description Check",
   "description": "Validates that PR descriptions meet minimum requirements - contains JIRA issue/s number",
-  "iconName": "octicon check-circle",
-  "categories": ["Automation", "Pull Request"],
+  "iconName": "octicon gear 24",
+  "categories": ["continuous-integration", "Automation", "Pull Request"],
   "filePatterns": [".*"]
 }
