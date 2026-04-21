@@ -1,0 +1,11 @@
+name: Test Req WF
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Simple Test
+        run: echo "Required workflow triggered successfully!"
