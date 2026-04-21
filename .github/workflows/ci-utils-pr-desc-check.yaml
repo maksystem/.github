@@ -1,0 +1,154 @@
+name: ⚙️ Validate PR description for JIRA ticket
+
+on:
+  workflow_call:
+    inputs:
+      pr_number:
+        description: "Pull Request number"
+        required: true
+        type: number
+      pr_body:
+        description: "Pull Request body text"
+        required: true
+        type: string
+    outputs:
+      format_valid:
+        description: "Whether the PR body contains a valid JIRA ticket format"
+        value: ${{ jobs.validate-pr-body.outputs.format_valid }}
+      placeholder_used:
+        description: "Whether the PR body contains placeholder JIRA tickets"
+        value: ${{ jobs.validate-pr-body.outputs.placeholder_used }}
+      warning_present:
+        description: "Whether the PR body already contains the warning message"
+        value: ${{ jobs.validate-pr-body.outputs.warning_present }}
+
+permissions:
+  pull-requests: write # Needed to edit the PR description
+  contents: read
+
+jobs:
+  validate-pr-body:
+    runs-on: ubuntu-latest
+    outputs:
+      format_valid: ${{ steps.validate.outputs.format_valid }}
+      placeholder_used: ${{ steps.validate.outputs.placeholder_used }}
+      warning_present: ${{ steps.validate.outputs.warning_present }}
+
+    steps:
+      - name: Extract PR body
+        id: extract
+        env:
+          PR_BODY_INPUT: ${{ inputs.pr_body }}
+        run: |
+          # Save PR body to a file for processing
+          printf "%s" "$PR_BODY_INPUT" > pr_body.txt
+
+      - name: Validate ticket format
+        id: validate
+        run: |
+          PR_BODY="$(cat pr_body.txt)"
+
+          # Regex for valid tickets
+          TICKET_REGEX='Issue:[[:space:]]*([A-Z][A-Z0-9]*-[0-9]+)([[:space:]]*,[[:space:]]*[A-Z][A-Z0-9]*-[0-9]+)*'
+
+          # Placeholder tickets we should not accept
+          PLACEHOLDER_REGEX='ABC-1234|DEF-5678'
+
+          # Warning text
+          WARNING="⚠️ **Missing JIRA ticket number or required format."
+
+          # --- CHECKS ---
+          if grep -qiE "$TICKET_REGEX" <<< "$PR_BODY"; then
+            FORMAT_VALID="true"
+          else
+            FORMAT_VALID="false"
+          fi
+
+          # Placeholder check only if format is valid
+          if [[ "$FORMAT_VALID" == "true" ]]; then
+            if grep -qiE "$PLACEHOLDER_REGEX" <<< "$PR_BODY"; then
+              PLACEHOLDER_USED="true"
+            else
+              PLACEHOLDER_USED="false"
+            fi
+          else
+            PLACEHOLDER_USED="false"
+          fi
+
+          # Check if warning already exists
+          if grep -qF "$WARNING" <<< "$PR_BODY"; then
+            WARNING_PRESENT="true"
+          else
+            WARNING_PRESENT="false"
+          fi
+
+          # Summary
+          echo "format_valid=$FORMAT_VALID" >> $GITHUB_OUTPUT
+          echo "placeholder_used=$PLACEHOLDER_USED" >> $GITHUB_OUTPUT
+          echo "warning_present=$WARNING_PRESENT" >> $GITHUB_OUTPUT
+
+      # ---------------------------------------------------------
+      # REMOVE WARNING IF FORMAT IS NOW VALID
+      # ---------------------------------------------------------
+      - name: Remove warning block
+        if: steps.validate.outputs.format_valid == 'true' && steps.validate.outputs.placeholder_used == 'false' && steps.validate.outputs.warning_present == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = ${{ inputs.pr_number }};
+
+            const warning = "⚠️ **Missing JIRA ticket number or required format.** Please ensure your PR description contains the text **`Issue: <JIRA-TICKET(S)>`** (e.g., `Issue: ABC-1234`, `DEF-5678`).";
+
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+            });
+
+            const body = pr.body || "";
+
+            // Remove everything starting from the warning down to the end
+            const newBody = body.replace(warning, "").trim();
+
+            await github.rest.pulls.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+              body: newBody
+            });
+
+      # ---------------------------------------------------------
+      # ADD WARNING IF FORMAT INVALID AND NO WARNING PRESENT
+      # ---------------------------------------------------------
+      - name: Add warning block
+        if: steps.validate.outputs.format_valid != 'true' && steps.validate.outputs.warning_present == 'false'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = ${{ inputs.pr_number }};
+            const warning = "\n\n⚠️ **Missing JIRA ticket number or required format.** Please ensure your PR description contains the text **`Issue: <JIRA-TICKET(S)>`** (e.g., `Issue: ABC-1234`, `DEF-5678`).";
+
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+            });
+
+            const body = pr.body || "";
+            const newBody = `${body}\n${warning}`;
+
+            await github.rest.pulls.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+              body: newBody
+            });
+
+      # ---------------------------------------------------------
+      # FINAL FAIL CHECK
+      # ---------------------------------------------------------
+      - name: Fail if invalid
+        if: steps.validate.outputs.format_valid != 'true' || steps.validate.outputs.placeholder_used == 'true'
+        run: |
+          echo "❌ Invalid or placeholder JIRA ticket found."
+          exit 1

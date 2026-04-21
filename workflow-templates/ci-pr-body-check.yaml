@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   call-pr-desc-check:
-    uses: maksystem/ci-hub/.github/workflows/ci-utils-pr-desc-check.yaml@main
+    uses: ./.github/workflows/ci-utils-pr-desc-check.yaml@main
     with:
       pr_number: ${{ github.event.pull_request.number }}
       pr_body: ${{ github.event.pull_request.body }}
